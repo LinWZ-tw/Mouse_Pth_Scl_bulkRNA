@@ -1,0 +1,268 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>UMAP Analysis Report</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+            .container { max-width: 1400px; margin: 0 auto; background-color: white; padding: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+            .control-panel { background-color: #ecf0f1; padding: 20px; border-radius: 5px; margin: 20px 0; }
+            .checkbox-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
+            .checkbox-item { display: flex; align-items: center; }
+            .checkbox-item input[type="checkbox"] { margin-right: 8px; width: 18px; height: 18px; cursor: pointer; }
+            .checkbox-item label { cursor: pointer; font-weight: 500; }
+            .button-group { margin-top: 15px; }
+            .btn { padding: 5px 12px; margin-right: 8px; border: none; border-radius: 3px; cursor: pointer; font-size: 12px; }
+            .btn-primary { background-color: #3498db; color: white; }
+            .btn-secondary { background-color: #95a5a6; color: white; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>UMAP Analysis</h1>
+            <div class="control-panel">
+                <h3>Plot Controls</h3>
+                <div>
+                    <h4>Select Groups to Display</h4>
+                    <div class="checkbox-group" id="group_checkboxes"></div>
+                    <div class="button-group">
+                        <button class="btn btn-primary" onclick="selectAllGroups()">Select All</button>
+                        <button class="btn btn-secondary" onclick="clearAllGroups()">Clear All</button>
+                    </div>
+                </div>
+            </div>
+            <div id="umap_interactive" style="width:100%;height:700px;"></div>
+            <div style="margin-top: 30px;">
+                <h2>Distance Between Groups (Euclidean Distance Between Centroids)</h2>
+                <div style="overflow-x: auto;">
+                    <table id="distance_matrix" style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                        <thead id="distance_matrix_head">
+                        </thead>
+                        <tbody id="distance_matrix_body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div style="margin-top: 30px;">
+                <h2>UMAP Coordinates Table</h2>
+                <div style="overflow-x: auto;">
+                    <table id="umap_table" style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                        <thead>
+                            <tr style="background-color: #3498db; color: white;">
+                                <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Sample</th>
+                                <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Group</th>
+                                <th style="padding: 12px; text-align: right; border: 1px solid #ddd;">UMAP 1</th>
+                                <th style="padding: 12px; text-align: right; border: 1px solid #ddd;">UMAP 2</th>
+                            </tr>
+                        </thead>
+                        <tbody id="umap_table_body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <script>
+            var data = {"groups": ["PTH(12w)", "PTH(4w)", "SCL(10w)", "SCL(2w)", "VEH(10w)", "VEH(12w)", "VEH(2w)", "VEH(4w)"], "samples": [{"sample": "PTH12w_1", "group": "PTH(12w)", "umap1": 19.507537841796875, "umap2": 5.873476982116699}, {"sample": "PTH12w_2", "group": "PTH(12w)", "umap1": 17.88514518737793, "umap2": 6.891613960266113}, {"sample": "PTH12w_3", "group": "PTH(12w)", "umap1": 18.05670738220215, "umap2": 8.288970947265625}, {"sample": "PTH12w_4", "group": "PTH(12w)", "umap1": 19.703083038330078, "umap2": 7.79772424697876}, {"sample": "PTH12w_5", "group": "PTH(12w)", "umap1": 19.8022518157959, "umap2": 8.400457382202148}, {"sample": "PTH12w_6", "group": "PTH(12w)", "umap1": 19.363018035888672, "umap2": 8.220078468322754}, {"sample": "PTH12w_7", "group": "PTH(12w)", "umap1": 19.936744689941406, "umap2": 8.085285186767578}, {"sample": "PTH12w_9", "group": "PTH(12w)", "umap1": 17.89784812927246, "umap2": 9.014060020446777}, {"sample": "PTH4w_1", "group": "PTH(4w)", "umap1": 20.028600692749023, "umap2": 7.093658447265625}, {"sample": "PTH4w_2", "group": "PTH(4w)", "umap1": 19.67291259765625, "umap2": 7.432865142822266}, {"sample": "PTH4w_3", "group": "PTH(4w)", "umap1": 18.779207229614258, "umap2": 6.141692161560059}, {"sample": "PTH4w_4", "group": "PTH(4w)", "umap1": 19.52663803100586, "umap2": 6.547781467437744}, {"sample": "PTH4w_5", "group": "PTH(4w)", "umap1": 20.646717071533203, "umap2": 7.957826614379883}, {"sample": "PTH4w_7", "group": "PTH(4w)", "umap1": 17.444211959838867, "umap2": 8.430002212524414}, {"sample": "PTH4w_8", "group": "PTH(4w)", "umap1": 20.367111206054688, "umap2": 7.843752861022949}, {"sample": "PTH4w_9", "group": "PTH(4w)", "umap1": 18.974956512451172, "umap2": 6.940545082092285}, {"sample": "Scl10w_1", "group": "SCL(10w)", "umap1": 18.45001983642578, "umap2": 6.65595006942749}, {"sample": "Scl10w_2", "group": "SCL(10w)", "umap1": 19.261550903320312, "umap2": 6.596460819244385}, {"sample": "Scl10w_4", "group": "SCL(10w)", "umap1": 17.943588256835938, "umap2": 6.481264114379883}, {"sample": "Scl10w_5", "group": "SCL(10w)", "umap1": 19.852855682373047, "umap2": 6.196784019470215}, {"sample": "Scl10w_6", "group": "SCL(10w)", "umap1": 18.889009475708008, "umap2": 8.72004222869873}, {"sample": "Scl10w_7", "group": "SCL(10w)", "umap1": 20.17146873474121, "umap2": 6.203643798828125}, {"sample": "Scl10w_8", "group": "SCL(10w)", "umap1": 19.309490203857422, "umap2": 7.124929428100586}, {"sample": "Scl10w_9", "group": "SCL(10w)", "umap1": 20.5910587310791, "umap2": 7.251340389251709}, {"sample": "Scl2w_1", "group": "SCL(2w)", "umap1": 19.413352966308594, "umap2": 6.271733283996582}, {"sample": "Scl2w_10", "group": "SCL(2w)", "umap1": 18.276002883911133, "umap2": 7.161909103393555}, {"sample": "Scl2w_2", "group": "SCL(2w)", "umap1": 20.578651428222656, "umap2": 7.569538116455078}, {"sample": "Scl2w_4", "group": "SCL(2w)", "umap1": 18.845294952392578, "umap2": 6.20352840423584}, {"sample": "Scl2w_5", "group": "SCL(2w)", "umap1": 19.62508201599121, "umap2": 5.466759204864502}, {"sample": "Scl2w_6", "group": "SCL(2w)", "umap1": 17.86439323425293, "umap2": 6.05336332321167}, {"sample": "Scl2w_7", "group": "SCL(2w)", "umap1": 17.547395706176758, "umap2": 6.513181209564209}, {"sample": "Scl2w_8", "group": "SCL(2w)", "umap1": 17.364360809326172, "umap2": 7.845314025878906}, {"sample": "Scl2w_9", "group": "SCL(2w)", "umap1": 20.13811492919922, "umap2": 8.285432815551758}, {"sample": "Veh10w_1", "group": "VEH(10w)", "umap1": 18.329687118530273, "umap2": 6.155844688415527}, {"sample": "Veh10w_2", "group": "VEH(10w)", "umap1": 19.05225944519043, "umap2": 5.655306339263916}, {"sample": "Veh10w_3", "group": "VEH(10w)", "umap1": 18.64912986755371, "umap2": 5.4670915603637695}, {"sample": "Veh10w_4", "group": "VEH(10w)", "umap1": 17.065471649169922, "umap2": 7.51813268661499}, {"sample": "Veh10w_5", "group": "VEH(10w)", "umap1": 17.797626495361328, "umap2": 7.307150363922119}, {"sample": "Veh10w_6", "group": "VEH(10w)", "umap1": 18.486328125, "umap2": 7.5475897789001465}, {"sample": "Veh10w_8", "group": "VEH(10w)", "umap1": 17.626808166503906, "umap2": 8.218616485595703}, {"sample": "Veh10w_9", "group": "VEH(10w)", "umap1": 18.517494201660156, "umap2": 8.173392295837402}, {"sample": "Veh12w_1", "group": "VEH(12w)", "umap1": 20.011093139648438, "umap2": 5.791378498077393}, {"sample": "Veh12w_2", "group": "VEH(12w)", "umap1": 19.170766830444336, "umap2": 5.8118367195129395}, {"sample": "Veh12w_3", "group": "VEH(12w)", "umap1": 18.292078018188477, "umap2": 5.611863613128662}, {"sample": "Veh12w_5", "group": "VEH(12w)", "umap1": 17.705215454101562, "umap2": 8.674843788146973}, {"sample": "Veh12w_6", "group": "VEH(12w)", "umap1": 17.69559669494629, "umap2": 7.731814384460449}, {"sample": "Veh12w_7", "group": "VEH(12w)", "umap1": 18.190906524658203, "umap2": 9.089310646057129}, {"sample": "Veh12w_8", "group": "VEH(12w)", "umap1": 17.10849380493164, "umap2": 8.266836166381836}, {"sample": "Veh12w_9", "group": "VEH(12w)", "umap1": 17.10853385925293, "umap2": 6.795871734619141}, {"sample": "Veh2w_1", "group": "VEH(2w)", "umap1": 19.28300666809082, "umap2": 8.708517074584961}, {"sample": "Veh2w_10", "group": "VEH(2w)", "umap1": 18.660364151000977, "umap2": 7.3348212242126465}, {"sample": "Veh2w_2", "group": "VEH(2w)", "umap1": 20.533987045288086, "umap2": 6.9862141609191895}, {"sample": "Veh2w_3", "group": "VEH(2w)", "umap1": 19.709606170654297, "umap2": 6.96061897277832}, {"sample": "Veh2w_6", "group": "VEH(2w)", "umap1": 17.24373435974121, "umap2": 8.921629905700684}, {"sample": "Veh2w_7", "group": "VEH(2w)", "umap1": 20.237428665161133, "umap2": 6.513962268829346}, {"sample": "Veh2w_8", "group": "VEH(2w)", "umap1": 19.43973731994629, "umap2": 5.465916633605957}, {"sample": "Veh2w_9", "group": "VEH(2w)", "umap1": 19.08820152282715, "umap2": 7.5788254737854}, {"sample": "Veh4w_10", "group": "VEH(4w)", "umap1": 18.204814910888672, "umap2": 8.68980598449707}, {"sample": "Veh4w_2", "group": "VEH(4w)", "umap1": 19.811845779418945, "umap2": 7.463263511657715}, {"sample": "Veh4w_4", "group": "VEH(4w)", "umap1": 18.291378021240234, "umap2": 6.595284938812256}, {"sample": "Veh4w_5", "group": "VEH(4w)", "umap1": 20.046817779541016, "umap2": 7.822927474975586}, {"sample": "Veh4w_6", "group": "VEH(4w)", "umap1": 17.152374267578125, "umap2": 8.173385620117188}, {"sample": "Veh4w_7", "group": "VEH(4w)", "umap1": 19.012006759643555, "umap2": 8.07425308227539}, {"sample": "Veh4w_8", "group": "VEH(4w)", "umap1": 18.012834548950195, "umap2": 7.887321949005127}, {"sample": "Veh4w_9", "group": "VEH(4w)", "umap1": 17.434642791748047, "umap2": 7.091554641723633}]};
+            var selectedGroups = new Set(data.groups);
+
+            function updateUmapPlot() {
+                var traces = [];
+                data.groups.forEach(function(group) {
+                    if (!selectedGroups.has(group)) return;
+                    var groupData = data.samples.filter(s => s.group === group);
+                    if (groupData.length === 0) return;
+                    traces.push({
+                        x: groupData.map(d => d.umap1),
+                        y: groupData.map(d => d.umap2),
+                        mode: 'markers',
+                        type: 'scatter',
+                        name: group,
+                        text: groupData.map(d => d.sample),
+                        hoverinfo: 'text',
+                        marker: { size: 12 }
+                    });
+                });
+
+                var layout = {
+                    title: 'Interactive UMAP Explorer',
+                    xaxis: { title: 'UMAP 1' },
+                    yaxis: { title: 'UMAP 2' },
+                    hovermode: 'closest'
+                };
+                Plotly.newPlot('umap_interactive', traces, layout);
+            }
+
+            function setupControls() {
+                var groupCheckboxes = document.getElementById('group_checkboxes');
+                data.groups.forEach(function(g) {
+                    var div = document.createElement('div');
+                    div.className = 'checkbox-item';
+                    var checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = 'group_' + g;
+                    checkbox.checked = true;
+                    checkbox.onchange = function() {
+                        if (this.checked) {
+                            selectedGroups.add(g);
+                        } else {
+                            selectedGroups.delete(g);
+                        }
+                        updateUmapPlot();
+                    };
+                    var label = document.createElement('label');
+                    label.htmlFor = checkbox.id;
+                    label.textContent = g;
+                    div.appendChild(checkbox);
+                    div.appendChild(label);
+                    groupCheckboxes.appendChild(div);
+                });
+            }
+
+            function selectAllGroups() {
+                data.groups.forEach(g => selectedGroups.add(g));
+                document.querySelectorAll('#group_checkboxes input').forEach(cb => cb.checked = true);
+                updateUmapPlot();
+            }
+
+            function clearAllGroups() {
+                selectedGroups.clear();
+                document.querySelectorAll('#group_checkboxes input').forEach(cb => cb.checked = false);
+                updateUmapPlot();
+            }
+
+            function calculateCentroids() {
+                var centroids = {};
+                data.groups.forEach(function(group) {
+                    var groupSamples = data.samples.filter(s => s.group === group);
+                    var sumU1 = 0, sumU2 = 0;
+                    groupSamples.forEach(s => {
+                        sumU1 += s.umap1;
+                        sumU2 += s.umap2;
+                    });
+                    centroids[group] = {
+                        umap1: sumU1 / groupSamples.length,
+                        umap2: sumU2 / groupSamples.length
+                    };
+                });
+                return centroids;
+            }
+
+            function calculateDistance(c1, c2) {
+                var dx = c1.umap1 - c2.umap1;
+                var dy = c1.umap2 - c2.umap2;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+
+            function populateDistanceMatrix() {
+                var centroids = calculateCentroids();
+                var groups = data.groups;
+
+                // Create header row
+                var thead = document.getElementById('distance_matrix_head');
+                thead.innerHTML = '';
+                var headerRow = document.createElement('tr');
+                headerRow.style.backgroundColor = '#3498db';
+                headerRow.style.color = 'white';
+
+                var emptyCell = document.createElement('th');
+                emptyCell.style.padding = '12px';
+                emptyCell.style.border = '1px solid #ddd';
+                emptyCell.style.textAlign = 'left';
+                headerRow.appendChild(emptyCell);
+
+                groups.forEach(function(group) {
+                    var th = document.createElement('th');
+                    th.textContent = group;
+                    th.style.padding = '12px';
+                    th.style.border = '1px solid #ddd';
+                    th.style.textAlign = 'center';
+                    headerRow.appendChild(th);
+                });
+                thead.appendChild(headerRow);
+
+                // Create body rows
+                var tbody = document.getElementById('distance_matrix_body');
+                tbody.innerHTML = '';
+
+                groups.forEach(function(group1, i) {
+                    var row = document.createElement('tr');
+                    row.style.backgroundColor = i % 2 === 0 ? '#f9f9f9' : 'white';
+
+                    var rowHeader = document.createElement('td');
+                    rowHeader.textContent = group1;
+                    rowHeader.style.padding = '10px';
+                    rowHeader.style.border = '1px solid #ddd';
+                    rowHeader.style.fontWeight = 'bold';
+                    rowHeader.style.backgroundColor = '#e8f4f8';
+                    row.appendChild(rowHeader);
+
+                    groups.forEach(function(group2) {
+                        var cell = document.createElement('td');
+                        if (group1 === group2) {
+                            cell.textContent = '-';
+                            cell.style.backgroundColor = '#f0f0f0';
+                        } else {
+                            var dist = calculateDistance(centroids[group1], centroids[group2]);
+                            cell.textContent = dist.toFixed(4);
+                        }
+                        cell.style.padding = '10px';
+                        cell.style.border = '1px solid #ddd';
+                        cell.style.textAlign = 'center';
+                        row.appendChild(cell);
+                    });
+
+                    tbody.appendChild(row);
+                });
+            }
+
+            function populateTable() {
+                var tbody = document.getElementById('umap_table_body');
+                tbody.innerHTML = '';
+
+                data.samples.forEach(function(sample, index) {
+                    var row = document.createElement('tr');
+                    row.style.backgroundColor = index % 2 === 0 ? '#f9f9f9' : 'white';
+
+                    var cellSample = document.createElement('td');
+                    cellSample.textContent = sample.sample;
+                    cellSample.style.padding = '10px';
+                    cellSample.style.border = '1px solid #ddd';
+                    row.appendChild(cellSample);
+
+                    var cellGroup = document.createElement('td');
+                    cellGroup.textContent = sample.group;
+                    cellGroup.style.padding = '10px';
+                    cellGroup.style.border = '1px solid #ddd';
+                    row.appendChild(cellGroup);
+
+                    var cellUmap1 = document.createElement('td');
+                    cellUmap1.textContent = sample.umap1.toFixed(4);
+                    cellUmap1.style.padding = '10px';
+                    cellUmap1.style.border = '1px solid #ddd';
+                    cellUmap1.style.textAlign = 'right';
+                    row.appendChild(cellUmap1);
+
+                    var cellUmap2 = document.createElement('td');
+                    cellUmap2.textContent = sample.umap2.toFixed(4);
+                    cellUmap2.style.padding = '10px';
+                    cellUmap2.style.border = '1px solid #ddd';
+                    cellUmap2.style.textAlign = 'right';
+                    row.appendChild(cellUmap2);
+
+                    tbody.appendChild(row);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                setupControls();
+                updateUmapPlot();
+                populateDistanceMatrix();
+                populateTable();
+            });
+        </script>
+    </body>
+    </html>
+    
