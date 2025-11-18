@@ -1,0 +1,5 @@
+*.html filter=lfs diff=lfs merge=lfs -text
+sample_clustering_pca_interactive.html filter=lfs diff=lfs merge=lfs -text
+pca_interactive.html filter=lfs diff=lfs merge=lfs -text
+sample_clustering_umap_interactive.html filter=lfs diff=lfs merge=lfs -text
+qc_report.html filter=lfs diff=lfs merge=lfs -text
